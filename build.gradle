@@ -37,9 +37,12 @@ ext {
 dependencies {
     compile('org.springframework.boot:spring-boot-starter-cache')
     compile('org.springframework.boot:spring-boot-starter-data-rest')
-    //compile('org.springframework.boot:spring-boot-starter-security')
+    compile('org.springframework.boot:spring-boot-starter-security')
+    compile('org.springframework.security.oauth:spring-security-oauth2:2.0.8.RELEASE')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.session:spring-session-core')
+    compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    compile('com.google.code.gson:gson')
     runtime('org.postgresql:postgresql')
     compileOnly('org.projectlombok:lombok')
     providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
