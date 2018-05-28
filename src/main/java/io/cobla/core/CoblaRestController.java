@@ -3,12 +3,15 @@ package io.cobla.core;
 import com.google.gson.Gson;
 import io.cobla.core.domain.*;
 import io.cobla.core.dto.*;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.Optional;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @RestController
 public class CoblaRestController {
 
@@ -29,7 +32,7 @@ public class CoblaRestController {
     @PostMapping("/wallet")
     public String getWallet(@RequestBody WalletSelDto dto){
 
-        if(dto.getAddr()==null){
+        if(dto.getAddr().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
@@ -69,7 +72,7 @@ public class CoblaRestController {
     @PutMapping("/wallet")
     public String saveWallet(@RequestBody WalletSaveReqDto dto){
 
-        if(dto.getAddr()==null){
+        if(dto.getAddr().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
@@ -80,6 +83,14 @@ public class CoblaRestController {
         ApiWalletSave result= walletSaveRepository.save(dto.toEntity());
 
         return new Gson().toJson(result);
+    }
+
+    @ExceptionHandler(value = Exception.class)
+    public OauthErrDTO errorHandler(Exception e){
+        OauthErrDTO errResult = new OauthErrDTO();
+        errResult.setError("invalid_parameter");
+        errResult.setError_description("parameter is null");
+        return errResult;
     }
 
 
