@@ -3,6 +3,7 @@ package io.cobla.core.domain;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Date;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -10,7 +11,7 @@ import java.util.Date;
 @Setter
 @Entity
 @Table(name="api_wallet")
-public class ApiWallet {
+public class ApiWallet implements Serializable {
 
     @Id
     String addr;

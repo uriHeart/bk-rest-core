@@ -15,10 +15,16 @@ apply plugin: 'eclipse-wtp'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'war'
+war {
+    baseName='cobla_core'
+    version = '0.0.1-SNAPSHOT'
+    exclude("build/**")
+}
 
 group = 'io.cobla'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
