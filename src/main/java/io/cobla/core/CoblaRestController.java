@@ -70,23 +70,52 @@ public class CoblaRestController {
     }
 
     @PutMapping("/wallet")
-    public String saveWallet(@RequestBody WalletSaveReqDto dto){
+    public String saveWallet(@RequestBody WalletParamDto param){
 
-        if(dto.getAddr().isEmpty()){
+        if(param.getAddr().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
             errResult.setError_description("'addr' is required");
             return new Gson().toJson(errResult);
+        }else if(param.getResult_type().isEmpty()){
+
+            OauthErrDTO errResult = new OauthErrDTO();
+            errResult.setError("invalid_parameter");
+            errResult.setError_description("'result_type' is required");
+            return new Gson().toJson(errResult);
+        }else if(param.getCurrency().isEmpty()){
+
+            OauthErrDTO errResult = new OauthErrDTO();
+            errResult.setError("invalid_parameter");
+            errResult.setError_description("'currency' is required");
+            return new Gson().toJson(errResult);
+        }else if(param.getExchange().isEmpty()){
+
+            OauthErrDTO errResult = new OauthErrDTO();
+            errResult.setError("invalid_parameter");
+            errResult.setError_description("'exchange' is required");
+            return new Gson().toJson(errResult);
         }
 
-        ApiWalletSave result= walletSaveRepository.save(dto.toEntity());
+        WalletSaveReqDto inDto = new WalletSaveReqDto();
+        inDto.setAddr(param.getAddr());
+        inDto.setCurrency_id(param.getCurrency());
+        inDto.setExchange_id(param.getExchange());
+        inDto.setResult_type_id(param.getResult_type());
+        ApiWalletSave result= walletSaveRepository.save(inDto.toEntity());
 
-        return new Gson().toJson(result);
+        WalletParamDto outDto = new WalletParamDto();
+        outDto.setResult_type(result.getResult_type_id());
+        outDto.setAddr(result.getAddr());
+        outDto.setCurrency(result.getCurrency_id());
+        outDto.setExchange(result.getExchange_id());
+
+        return new Gson().toJson(outDto);
     }
 
-    @ExceptionHandler(value = Exception.class)
-    public OauthErrDTO errorHandler(Exception e){
+   @ExceptionHandler(value = NullPointerException.class)
+    public OauthErrDTO errorHandler(NullPointerException e){
         OauthErrDTO errResult = new OauthErrDTO();
         errResult.setError("invalid_parameter");
         errResult.setError_description("parameter is null");
