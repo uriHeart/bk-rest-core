@@ -22,12 +22,14 @@ public class CoblaRestController {
     @Autowired
     ApiWalletSaveRepository walletSaveRepository;
 
-/*    @GetMapping("/walletQuery")
+    /*
+    @GetMapping("/walletQuery")
     public String getWalletQuery(@RequestBody WalletSelDto dto){
         WalletSelDto result = walletRepository.findByWallet(dto.getAddr());
 
         return new Gson().toJson(result);
-    }*/
+    }
+    */
 
     @PostMapping("/wallet")
     public String getWallet(@RequestBody WalletSelDto dto){
