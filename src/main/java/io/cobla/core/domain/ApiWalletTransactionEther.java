@@ -1,7 +1,6 @@
 package io.cobla.core.domain;
 
 
-import com.sun.jmx.snmp.Timestamp;
 import lombok.*;
 
 import javax.persistence.*;

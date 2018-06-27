@@ -1,6 +1,5 @@
 package io.cobla.core.dto;
 
-import com.sun.jmx.snmp.Timestamp;
 import io.cobla.core.domain.ApiWalletTransactionEther;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
