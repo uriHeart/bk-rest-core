@@ -2,18 +2,18 @@ package io.cobla.core.dto;
 
 import io.cobla.core.domain.ApiCoin;
 import io.cobla.core.domain.ApiWallet;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.Id;
 import java.util.Date;
-import java.sql.Timestamp;
 
 @Getter
 @Setter
 @NoArgsConstructor
 public class WalletSelDto{
 
-    @Id
     String addr;
     Date ico_start;
     Date ico_end;
@@ -30,5 +30,11 @@ public class WalletSelDto{
          this.ico_end = ico_end;
          this.ico_currency = ico_currency;
      }
+
+    public ApiWallet toEntity(){
+        return ApiWallet.builder()
+                .addr(addr)
+                 .build();
+    }
 
 }

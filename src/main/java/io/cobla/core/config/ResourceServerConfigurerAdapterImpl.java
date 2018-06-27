@@ -1,4 +1,4 @@
-package io.cobla.core;
+package io.cobla.core.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,9 +12,12 @@ public class ResourceServerConfigurerAdapterImpl extends ResourceServerConfigure
     @Override
     public void configure(HttpSecurity http) throws Exception {
        http.headers().frameOptions().disable();
-        http
-        .authorizeRequests()
-        .anyRequest().authenticated()
+        http.authorizeRequests()
+            .antMatchers( "/malware")
+            .permitAll()
+            .antMatchers( "/addr/transaction")
+            .permitAll()
+         .anyRequest().authenticated()
         .and()
         .httpBasic();
 

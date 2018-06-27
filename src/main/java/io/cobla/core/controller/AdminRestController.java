@@ -1,8 +1,8 @@
-package io.cobla.core;
+package io.cobla.core.controller;
 
 import com.google.gson.Gson;
 import io.cobla.core.domain.OauthClientDetail;
-import io.cobla.core.domain.OauthClientSaveRepository;
+import io.cobla.core.domain.repository.OauthClientSaveRepository;
 import io.cobla.core.domain.OauthErrDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PutMapping;
