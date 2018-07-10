@@ -12,19 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.client.RestTemplate;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -44,7 +39,7 @@ public class CoblaRestController {
     @Autowired
     CoblaRestService coblaRestService;
 
-    @PostMapping("/wallet")
+    @PostMapping("/v1/blacklist/wallet")
     public String getWallet(@RequestBody WalletSelDto dto){
 
         if(dto.getAddr().isEmpty()){
@@ -68,8 +63,9 @@ public class CoblaRestController {
         Example<ApiWallet> example = Example.of(wallet,matcher);
 
 
-        Optional<ApiWallet> result =  walletRepository.findOne(example);
+        Optional<ApiWallet> result =  walletRepository.findDistinctFirstApiWalletByAddrAndCoins_Id(dto.getAddr(),dto.getCurrency());
 
+        //응답값 생성
         WalletSelDto resultDto = new WalletSelDto();
         resultDto.setAddr(result.map(ApiWallet::getAddr).orElse(dto.getAddr()));
         resultDto.setCurrency(result.map(ApiWallet::getCoins).map(ApiCoin::getId).orElse(""));
@@ -79,8 +75,8 @@ public class CoblaRestController {
 
         //ico 기간만료 체크
         if(resultType.equals("2")) {
-            Date icoStart = result.map(ApiWallet::getIco_start).orElse(null);
-            Date icoEnd = result.map(ApiWallet::getIco_end).orElse(null);
+            Date icoStart = result.map(ApiWallet::getIco_start).orElse( new Date());
+            Date icoEnd = result.map(ApiWallet::getIco_end).orElse( new Date());
             Date sysDate = new Date();
             if (!(sysDate.after(icoStart) && sysDate.before(icoEnd))) {
                 //ico 기간만료
@@ -97,7 +93,7 @@ public class CoblaRestController {
 
 
 
-    @PutMapping("/wallet")
+    @PutMapping("/v1/blacklist/wallet")
     public String saveWallet(@RequestBody WalletParamDto param){
 
         if(param.getAddr().isEmpty()){
@@ -142,6 +138,58 @@ public class CoblaRestController {
         return new Gson().toJson(outDto);
     }
 
+    @PostMapping("/v1/blacklist/wallet_block")
+    public String saveWalletList(@RequestBody WalletParamListDto params){
+
+        ArrayList<String> addrList = new ArrayList<String>();
+
+        //입력값 검증
+        for(WalletSelDto param : params.getAddr_list()){
+            addrList.add(param.getAddr());
+            if(StringUtils.isEmpty(param.getAddr())){
+                ResultDto resultDto = new ResultDto();
+                resultDto.setResult_code("1");
+                resultDto.setResult_text("error : addr is nul!");
+                return new Gson().toJson(resultDto);
+            }
+        }
+
+        ArrayList<WalletReturnDto> result = new ArrayList<WalletReturnDto>();
+
+        ArrayList<ApiWallet> addrResult =  walletRepository.findDistinctApiWalletByAddrInAndCoins_Id(addrList,params.getCurrency());
+
+        for(ApiWallet getData : addrResult){
+            WalletReturnDto  outData = new WalletReturnDto();
+            outData.setAddr(getData.getAddr());
+            outData.setCurrency(getData.getCoins().getId());
+            outData.setResult_type(getData.getWalletType().getId());
+            outData.setResult_code(getData.getWalletType().getResultcodtype().getId());
+
+            String resultType = getData.getWalletType().getId();
+
+            //ico 기간만료 체크
+            if(resultType.equals("2")) {
+                Date icoStart = getData.getIco_start();
+                Date icoEnd = getData.getIco_end();
+                Date sysDate = new Date();
+                if(icoStart ==null || icoEnd == null){continue;}
+                if (!(sysDate.after(icoStart) && sysDate.before(icoEnd))) {
+                    //ico 기간만료
+                    resultType = "7";
+                }
+            }
+
+            outData.setResult_type(resultType);
+
+            result.add(outData);
+        }
+
+        WalletListReturnDto listReturn = new WalletListReturnDto();
+        listReturn.setResult(result);
+
+        return new Gson().toJson(listReturn);
+    }
+
     //@Transactional
     //@PostMapping(value ="/malware", consumes  = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PostMapping(value ="/malware")
@@ -152,22 +200,28 @@ public class CoblaRestController {
      }
 
 
-
+    //이더스캔에서 지값 주소에 대한 트랜잭션을 획득한다.
     @PostMapping(value ="/addr/transaction")
-    public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto) throws Exception {
+    public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto)  {
 
-        String url = coblaRestService.buildEtherScanAccountUri(dto);
+        //중복실행방지
+        HashMap<String,String> runKey = new HashMap<String,String>();
 
-        RestTemplate restTemplate = new RestTemplate();
-
-        String jsonData = restTemplate.getForObject(url,String.class);
-        Gson apiResult = new Gson();
-        EtherScanDto etherTxData = apiResult.fromJson(jsonData,EtherScanDto.class);
-
-        String resultText = coblaRestService.addWalletTransaction(etherTxData);
         ResultDto result= new ResultDto();
         result.setResult_code("0");
-        result.setResult_text(resultText);
+        result.setResult_text("SUCESS");
+
+
+        ArrayList<ApiWalletTransactionReqDto> req = new ArrayList<ApiWalletTransactionReqDto>();
+        req.add(dto);
+
+        try {
+            ArrayList<ApiWalletTransactionReqDto> addrKey = coblaRestService.colletTransaction(req,runKey);
+
+        }catch(Exception e){
+            result.setResult_code("1");
+            result.setResult_text("addr add exception");
+        }
 
         return new Gson().toJson(result);
     }

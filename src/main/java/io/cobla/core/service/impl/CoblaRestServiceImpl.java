@@ -1,5 +1,6 @@
 package io.cobla.core.service.impl;
 
+import com.google.gson.Gson;
 import io.cobla.core.domain.ApiCollect;
 import io.cobla.core.domain.ApiWalletSave;
 import io.cobla.core.domain.ApiWalletTransactionEther;
@@ -11,6 +12,7 @@ import io.cobla.core.service.CoblaRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -18,7 +20,9 @@ import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class CoblaRestServiceImpl implements CoblaRestService {
@@ -72,18 +76,25 @@ public class CoblaRestServiceImpl implements CoblaRestService {
     }
 
     @Override
-    public String addWalletTransaction(EtherScanDto etherTxData) {
+    public ArrayList<ApiWalletTransactionReqDto> addWalletTransaction(EtherScanDto etherTxData ) {
 
         ArrayList<ApiWalletTransactionEther>  inDataList = new ArrayList<ApiWalletTransactionEther>();
 
+        ArrayList<ApiWalletTransactionReqDto> result = new ArrayList<ApiWalletTransactionReqDto>();
 
         for(ApiWalletTransactionEtherDto data : etherTxData.getResult()){
             ApiWalletTransactionEther indata = data.toEntity();
             inDataList.add(indata);
+
+            ApiWalletTransactionReqDto outData = new ApiWalletTransactionReqDto();
+            outData.setAddr(indata.getAddr_to());
+
+            result.add(outData);
         }
+
         apiWalletTransactionRepository.saveAll(inDataList);
 
-        return "add success";
+        return result ;
     }
 
     @Override
@@ -191,5 +202,52 @@ public class CoblaRestServiceImpl implements CoblaRestService {
         result.setResult_code("0");
         result.setResult_text("add success and row errorCount:"+errorCount);
         return result;
+    }
+
+    @Override
+    public ArrayList<ApiWalletTransactionReqDto> colletTransaction(ArrayList<ApiWalletTransactionReqDto> param,HashMap<String,String> runKey){
+
+        AtomicReference<ArrayList<ApiWalletTransactionReqDto>> result = new AtomicReference<ArrayList<ApiWalletTransactionReqDto>>();
+
+        int stopCount =0;
+
+        param.forEach((dto)->{
+
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            if(!runKey.containsKey(dto.getAddr())){
+                runKey.put(dto.getAddr(),dto.getAddr());
+
+                //GET REQUEST URL 생성
+                String url = this.buildEtherScanAccountUri(dto);
+
+                RestTemplate restTemplate = new RestTemplate();
+
+                //api 호출
+                String jsonData = restTemplate.getForObject(url,String.class);
+                Gson apiResult = new Gson();
+
+                EtherScanDto etherTxData = apiResult.fromJson(jsonData,EtherScanDto.class);
+
+
+                //호출데이터 저장
+                ArrayList<ApiWalletTransactionReqDto> addrToData =this.addWalletTransaction(etherTxData);
+
+                //10,000건이상의 데이터는 거래소로 판단하여 더이상 수집하지 않는다.
+                if(etherTxData.getResult().size() < 10000) {
+                    result.set(addrToData);
+                }
+            }
+        });
+
+        if(result.get().isEmpty()){
+            return  null;
+        }
+
+        return colletTransaction(result.get(),runKey);
     }
 }

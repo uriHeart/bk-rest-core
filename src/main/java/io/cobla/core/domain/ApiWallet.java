@@ -13,9 +13,8 @@ import java.util.Date;
 @Table(name="api_wallet")
 public class ApiWallet implements Serializable {
 
-    @Id
-    Long wallet_id;
 
+    @Id
     String addr;
 
     @ManyToOne(targetEntity = ApiExchange.class)
@@ -26,20 +25,22 @@ public class ApiWallet implements Serializable {
     @JoinColumn(name="result_type_id")
     ApiWallettype walletType;
 
+
     @ManyToOne(targetEntity = ApiCoin.class)
     @JoinColumn(name="currency_id")
-    ApiCoin coins;
+    ApiCoin coins = new ApiCoin();
 
     Date ico_start;
     Date ico_end;
     String ico_currency;
 
     @Builder
-    public ApiWallet(Long wallet_id ,String addr ,Date ico_start,Date ico_end,String ico_currency) {
-        this.wallet_id = wallet_id;
+    public ApiWallet(Long wallet_id ,String addr ,Date ico_start,Date ico_end,String ico_currency,String currency_id) {
+       // this.wallet_id = wallet_id;
         this.addr = addr;
         this.ico_start = ico_start;
         this.ico_end = ico_end;
         this.ico_currency = ico_currency;
+        this.coins.setId(currency_id);
     }
 }

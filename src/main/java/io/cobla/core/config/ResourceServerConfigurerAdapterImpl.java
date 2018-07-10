@@ -17,6 +17,11 @@ public class ResourceServerConfigurerAdapterImpl extends ResourceServerConfigure
             .permitAll()
             .antMatchers( "/addr/transaction")
             .permitAll()
+            //.antMatchers( "/v1/blacklist/wallet_block")
+            //.permitAll()
+            //.antMatchers( "/wallet")
+            //.permitAll()
+
          .anyRequest().authenticated()
         .and()
         .httpBasic();
