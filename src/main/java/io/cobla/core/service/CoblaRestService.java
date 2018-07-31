@@ -15,5 +15,7 @@ public interface CoblaRestService {
 
     ResultDto addBlackWallet(MultipartFile file) throws Exception;
 
-    ArrayList<ApiWalletTransactionReqDto> colletTransaction(ArrayList<ApiWalletTransactionReqDto> param,HashMap<String,String> runKey);
+    ResultDto collectTransaction(ApiWalletTransactionReqDto param);
+
+    //ArrayList<ApiWalletTransactionReqDto> collectTransaction(ArrayList<ApiWalletTransactionReqDto> param,HashMap<String,String> runKey);
 }

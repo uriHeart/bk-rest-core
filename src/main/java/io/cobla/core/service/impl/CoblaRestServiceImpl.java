@@ -48,7 +48,7 @@ public class CoblaRestServiceImpl implements CoblaRestService {
 
 
         String module = "account";
-        String action = "txlist";
+        String action = "tokentx";
         String address =param.getAddr();
         String startBlock = "0";
         String endBlock ="99999999";
@@ -166,10 +166,11 @@ public class CoblaRestServiceImpl implements CoblaRestService {
             inDto.setHash(hash);
             inDto.setReason(reason);
 
+            //파일 업로드후 거래주소 입력
             int idx = 0;
             for(String inData :data){
                 if(idx == 0){
-                    inDto.setAddr(inData);
+                    inDto.setAddr(inData.toLowerCase());
                 }else if(idx == 1){
                     inDto.setCurrency_id(inData);
                 }
@@ -204,50 +205,87 @@ public class CoblaRestServiceImpl implements CoblaRestService {
         return result;
     }
 
+
     @Override
-    public ArrayList<ApiWalletTransactionReqDto> colletTransaction(ArrayList<ApiWalletTransactionReqDto> param,HashMap<String,String> runKey){
+    public ResultDto collectTransaction(ApiWalletTransactionReqDto param){
 
-        AtomicReference<ArrayList<ApiWalletTransactionReqDto>> result = new AtomicReference<ArrayList<ApiWalletTransactionReqDto>>();
+        ResultDto result = new ResultDto();
 
-        int stopCount =0;
+        //GET REQUEST URL 생성
+        String url = this.buildEtherScanAccountUri(param);
 
-        param.forEach((dto)->{
+        RestTemplate restTemplate = new RestTemplate();
 
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        //api 호출
+        String jsonData = restTemplate.getForObject(url,String.class);
+        Gson apiResult = new Gson();
 
-            if(!runKey.containsKey(dto.getAddr())){
-                runKey.put(dto.getAddr(),dto.getAddr());
+        EtherScanDto etherTxData = apiResult.fromJson(jsonData,EtherScanDto.class);
 
-                //GET REQUEST URL 생성
-                String url = this.buildEtherScanAccountUri(dto);
-
-                RestTemplate restTemplate = new RestTemplate();
-
-                //api 호출
-                String jsonData = restTemplate.getForObject(url,String.class);
-                Gson apiResult = new Gson();
-
-                EtherScanDto etherTxData = apiResult.fromJson(jsonData,EtherScanDto.class);
-
-
-                //호출데이터 저장
-                ArrayList<ApiWalletTransactionReqDto> addrToData =this.addWalletTransaction(etherTxData);
-
-                //10,000건이상의 데이터는 거래소로 판단하여 더이상 수집하지 않는다.
-                if(etherTxData.getResult().size() < 10000) {
-                    result.set(addrToData);
-                }
-            }
-        });
-
-        if(result.get().isEmpty()){
-            return  null;
-        }
-
-        return colletTransaction(result.get(),runKey);
+        //호출데이터 저장
+        ArrayList<ApiWalletTransactionReqDto> addrToData = this.addWalletTransaction(etherTxData);
+        result.setResult_code("success");
+        result.setResult_text(addrToData.size()+" transaction add success");
+        return result;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+//    @Override
+//    public ArrayList<ApiWalletTransactionReqDto> collectTransaction(ArrayList<ApiWalletTransactionReqDto> param,HashMap<String,String> runKey){
+//
+//            ArrayList<ApiWalletTransactionReqDto> result = new ArrayList<ApiWalletTransactionReqDto>();
+//
+//            int stopCount =0;
+//
+//            param.forEach((dto)->{
+//
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//
+//                if(!runKey.containsKey(dto.getAddr())){
+//                    runKey.put(dto.getAddr(),dto.getAddr());
+//
+//                    //GET REQUEST URL 생성
+//                    String url = this.buildEtherScanAccountUri(dto);
+//
+//
+//                    RestTemplate restTemplate = new RestTemplate();
+//
+//                    //api 호출
+//                    String jsonData = restTemplate.getForObject(url,String.class);
+//                    Gson apiResult = new Gson();
+//
+//                    EtherScanDto etherTxData = apiResult.fromJson(jsonData,EtherScanDto.class);
+//
+//                    //호출데이터 저장
+//                    ArrayList<ApiWalletTransactionReqDto> addrToData = this.addWalletTransaction(etherTxData);
+//
+//                    //1,000건이상의 데이터는 거래소로 판단하여 더이상 수집하지 않는다.
+//                    if(etherTxData.getResult().size() < 1000) {
+//
+//                        result.addAll(addrToData);
+//
+//                    }
+//                }
+//            });
+//
+//            if(result.size()==0){
+//            return  null;
+//        }
+//
+//        return collectTransaction(result,runKey);
+//    }
 }

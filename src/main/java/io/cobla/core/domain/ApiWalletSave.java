@@ -4,6 +4,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -24,15 +25,16 @@ public class ApiWalletSave implements Serializable {
     String currency_id;
     String reason;
     String hash;
+    LocalDateTime sys_cret_date;
 
     @Builder
-    public ApiWalletSave(String addr, String exchange_id , String result_type_id, String currency_id,String reason,String hash) {
-        //this.wallet_id = wallet_id;
-        this.addr = addr;
-        this.exchange_id = exchange_id;
+    public ApiWalletSave(String addr, String exchange_id , String result_type_id, String currency_id, String reason, String hash, LocalDateTime sys_cret_date) {
+        this.addr           = addr;
+        this.exchange_id    = exchange_id;
         this.result_type_id = result_type_id;
-        this.currency_id = currency_id;
-        this.reason = reason;
-        this.hash = hash;
+        this.currency_id    = currency_id;
+        this.reason         = reason;
+        this.hash           = hash;
+        this.sys_cret_date  = sys_cret_date;
      }
 }

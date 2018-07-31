@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 import javax.sql.DataSource;
 
-//@EnableWebSecurity
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
@@ -34,10 +33,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
-                .inMemoryAuthentication()
-                .withUser("user"). password("{noop}test").roles("USER")
-                .and()
-                .withUser("william.woodward").password("{noop}password2").roles("USER", "ADMIN");
+        .inMemoryAuthentication()
+        .withUser("user"). password("{noop}test").roles("USER")
+        .and()
+        .withUser("william.woodward").password("{noop}password2").roles("USER", "ADMIN");
 //        auth.jdbcAuthentication().dataSource(dataSource);
     }
 }

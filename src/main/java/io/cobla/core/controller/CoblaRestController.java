@@ -11,14 +11,16 @@ import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.client.RestTemplate;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 
@@ -67,7 +69,8 @@ public class CoblaRestController {
 
         //응답값 생성
         WalletSelDto resultDto = new WalletSelDto();
-        resultDto.setAddr(result.map(ApiWallet::getAddr).orElse(dto.getAddr()));
+        String addr = result.map(ApiWallet::getAddr).orElse(dto.getAddr());
+        resultDto.setAddr(addr.toLowerCase());
         resultDto.setCurrency(result.map(ApiWallet::getCoins).map(ApiCoin::getId).orElse(""));
         resultDto.setResult_code(result.map(ApiWallet::getWalletType).map(ApiWallettype::getResultcodtype).map(ApiResultcodtype::getId).orElse("0"));
 
@@ -114,6 +117,7 @@ public class CoblaRestController {
             errResult.setError("invalid_parameter");
             errResult.setError_description("'currency' is required");
             return new Gson().toJson(errResult);
+
         }else if(param.getExchange().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
@@ -123,13 +127,17 @@ public class CoblaRestController {
         }
 
         WalletSaveReqDto inDto = new WalletSaveReqDto();
-        inDto.setAddr(param.getAddr());
+
+        inDto.setAddr(param.getAddr().toLowerCase());
         inDto.setCurrency_id(param.getCurrency());
         inDto.setExchange_id(param.getExchange());
         inDto.setResult_type_id(param.getResult_type());
+        inDto.setSys_create_date(LocalDateTime.now());
+
         ApiWalletSave result= walletSaveRepository.save(inDto.toEntity());
 
         WalletParamDto outDto = new WalletParamDto();
+
         outDto.setResult_type(result.getResult_type_id());
         outDto.setAddr(result.getAddr());
         outDto.setCurrency(result.getCurrency_id());
@@ -154,13 +162,14 @@ public class CoblaRestController {
             }
         }
 
+
         ArrayList<WalletReturnDto> result = new ArrayList<WalletReturnDto>();
 
         ArrayList<ApiWallet> addrResult =  walletRepository.findDistinctApiWalletByAddrInAndCoins_Id(addrList,params.getCurrency());
 
         for(ApiWallet getData : addrResult){
             WalletReturnDto  outData = new WalletReturnDto();
-            outData.setAddr(getData.getAddr());
+            outData.setAddr(getData.getAddr().toLowerCase());
             outData.setCurrency(getData.getCoins().getId());
             outData.setResult_type(getData.getWalletType().getId());
             outData.setResult_code(getData.getWalletType().getResultcodtype().getId());
@@ -200,30 +209,12 @@ public class CoblaRestController {
      }
 
 
-    //이더스캔에서 지값 주소에 대한 트랜잭션을 획득한다.
-    @PostMapping(value ="/addr/transaction")
-    public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto)  {
-
-        //중복실행방지
-        HashMap<String,String> runKey = new HashMap<String,String>();
-
-        ResultDto result= new ResultDto();
-        result.setResult_code("0");
-        result.setResult_text("SUCESS");
 
 
-        ArrayList<ApiWalletTransactionReqDto> req = new ArrayList<ApiWalletTransactionReqDto>();
-        req.add(dto);
-
-        try {
-            ArrayList<ApiWalletTransactionReqDto> addrKey = coblaRestService.colletTransaction(req,runKey);
-
-        }catch(Exception e){
-            result.setResult_code("1");
-            result.setResult_text("addr add exception");
-        }
-
-        return new Gson().toJson(result);
+    @CrossOrigin(origins ="*")
+    @RequestMapping(value ="/addr/transaction" ,method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> doTransactionAnalysisOptions(@RequestBody ApiWalletTransactionReqDto dto)  {
+        return ResponseEntity.ok().allow(HttpMethod.POST,HttpMethod.GET,HttpMethod.DELETE,HttpMethod.OPTIONS,HttpMethod.HEAD).build();
     }
 
     @Transactional
@@ -240,5 +231,53 @@ public class CoblaRestController {
         return errResult;
     }
 
+
+    //이더스캔에서캔에서 지값 주소에 대한 트랜잭션을 획득한다.
+     @PostMapping(value ="/addr/transaction")
+    public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto)  {
+
+        ResultDto result= new ResultDto();
+
+        try {
+            result = coblaRestService.collectTransaction(dto);
+            result.setResult_code("0");
+            result.setResult_text("SUCCESS");
+
+        }catch(Exception e){
+            result.setResult_code("1");
+            result.setResult_text("addr add exception");
+        }
+
+        return new Gson().toJson(result);
+
+
+
+
+    //이더스캔에서 지값 주소에 대한 트랜잭션을 획득한다.
+//    @CrossOrigin(origins ="*")
+//    @PostMapping(value ="/addr/transaction")
+//    public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto)  {
+//
+//        //중복실행방지
+//        HashMap<String,String> runKey = new HashMap<String,String>();
+//
+//        ResultDto result= new ResultDto();
+//        result.setResult_code("0");
+//        result.setResult_text("SUCCESS");
+//
+//
+//        ArrayList<ApiWalletTransactionReqDto> req = new ArrayList<ApiWalletTransactionReqDto>();
+//        req.add(dto);
+//
+//        try {
+//            ArrayList<ApiWalletTransactionReqDto> addrKey = coblaRestService.collectTransaction(req,runKey);
+//
+//        }catch(Exception e){
+//            result.setResult_code("1");
+//            result.setResult_text("addr add exception");
+//        }
+//
+//        return new Gson().toJson(result);
+    }
 
 }

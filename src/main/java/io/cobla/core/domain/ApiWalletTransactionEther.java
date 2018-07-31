@@ -33,10 +33,13 @@ public class ApiWalletTransactionEther {
     Double gas_price;
     Integer confirmations;
     Long tx_time;
+    Integer block_number;
+    String token_name;
+    String token_symbol;
+    Integer token_decimal;
 
     @Builder
     public ApiWalletTransactionEther(
-            //Long transaction_id,
             Double value,
             String nonce,
             String block_hash,
@@ -52,10 +55,12 @@ public class ApiWalletTransactionEther {
             Double gas_price,
             Integer confirmations,
             String tx_hash,
-            Long tx_time){
+            Long tx_time,
+            String token_name,
+            String token_symbol,
+            Integer token_decimal,
+            Integer block_number){
 
-
-       //this.transaction_id = transaction_id;
         this.value = value;
         this.nonce = nonce;
         this.block_hash = block_hash;
@@ -72,6 +77,10 @@ public class ApiWalletTransactionEther {
         this.confirmations = confirmations;
         this.tx_hash = tx_hash;
         this.tx_time = tx_time;
+        this.token_name = token_name;
+        this.token_symbol = token_symbol;
+        this.token_decimal = token_decimal;
+        this.block_number = block_number;
 
     }
 

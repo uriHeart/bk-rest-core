@@ -6,7 +6,6 @@ import io.cobla.core.domain.repository.OauthClientSaveRepository;
 import io.cobla.core.domain.OauthErrDTO;
 import io.cobla.core.dto.OauthClientDetailReqDto;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,7 +48,7 @@ public class AdminRestController {
              return new Gson().toJson(errResult);
          }
 
-        dto.setAccess_token_validity(dto.getAccess_token_validity()==null? 86400 :dto.getAccess_token_validity()); //60*60*24 하루동안유효함
+        dto.setAccess_token_validity(dto.getAccess_token_validity() == null? 86400 :dto.getAccess_token_validity()); //60*60*24 하루동안유효함
         dto.setRefresh_token_validity(2592000);
         dto.setAuthorized_grant_types("password,refresh_token,client_credentials");
         dto.setScope("read,write");
