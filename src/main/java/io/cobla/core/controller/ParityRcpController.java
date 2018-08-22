@@ -1,12 +1,12 @@
 package io.cobla.core.controller;
 
+import com.google.gson.Gson;
 import io.cobla.core.dto.ResultDto;
 import io.cobla.core.dto.rpc.ApiWalletMonitorReqDto;
 import io.cobla.core.dto.rpc.RpcReqDto;
 import io.cobla.core.service.ParityRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -89,6 +89,17 @@ public class ParityRcpController {
         reqDto.setMonitorReqTime(LocalDateTime.now());
         //List<ApiWalletMonitor> result = apiWalletMonitorRepository.findAll();
         return ResponseEntity.ok(reqDto);
-}
+    }
+
+    @PostMapping("/test/elastic")
+    public String convertTransaction(@RequestBody HashMap<String, String> params ) throws IOException {
+
+
+        String txData = parityRpcService.getTransactionByHash(params);
+        parityRpcService.transactionInElastic(txData);
+
+        return new Gson().toJson("");
+    }
+
 
 }

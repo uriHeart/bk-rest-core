@@ -47,6 +47,11 @@ public interface ParityRpcService {
      */
     ResultDto getSendTxCount(HashMap<String, String> params) throws IOException;
 
+    /**
+     * 해쉬값에 대한 트랜잭션 조회
+     */
+    String getTransactionByHash(HashMap<String, String> params) throws IOException;
 
+    String transactionInElastic(String txData) throws IOException;
 
 }

@@ -48,7 +48,8 @@ public class CoblaRestServiceImpl implements CoblaRestService {
 
 
         String module = "account";
-        String action = "tokentx";
+        String action = "txlist";
+        //String action = "tokentx";
         String address =param.getAddr();
         String startBlock = "0";
         String endBlock ="99999999";

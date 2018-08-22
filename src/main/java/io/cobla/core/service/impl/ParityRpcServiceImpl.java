@@ -21,9 +21,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,8 +46,8 @@ public class ParityRpcServiceImpl implements ParityRpcService {
     @Autowired
     ApiWalletMonitorRepository apiWalletMonitorRepository;
 
-
-    private final BigInteger divideBase = new BigInteger("1000000000000000000");
+    @Value("${block.tracer.parity.rpc.dvide.value}")
+    private String divideBase;
 
     @Override
     public ResultDto getBalance(HashMap<String, String> params) throws IOException {
@@ -77,9 +78,10 @@ public class ParityRpcServiceImpl implements ParityRpcService {
 
 
         BigInteger balance = new BigInteger(data.getResult().substring(2), 16);
-        BigInteger[] divideBalance = balance.divideAndRemainder(divideBase);
 
-        String returnBalance = divideBalance[0].toString()+"."+divideBalance[1].toString();
+        BigDecimal divideValue = new BigDecimal(balance,balance.compareTo(BigInteger.ZERO)==0 ? 0 : 18);
+
+        String returnBalance = divideValue.toString();
         result.setResult_text(returnBalance);
 
         return result;
@@ -103,7 +105,7 @@ public class ParityRpcServiceImpl implements ParityRpcService {
 
         if("0".equals(balanceResult.getResult_code())) {
             reqDto.setBalance(Double.valueOf(balanceResult.getResult_text()));
-            reqDto.setLastTxTime(LocalDateTime.now());
+            reqDto.setLastTxTime(reqDto.getMonitorReqTime());
             apiWalletMonitorRepository.save(reqDto.toEntity());
             balanceResult.setResult_text("add success");
         }
@@ -132,6 +134,9 @@ public class ParityRpcServiceImpl implements ParityRpcService {
             int resultTx = Integer.parseInt(result.getResult_text());
 
             if(monitor.getTx_count() != resultTx ){
+
+                ResultDto balance = this.getBalance(reqParam);
+                monitor.setBalance(Double.valueOf(balance.getResult_text()));
                 monitor.setTx_count(resultTx);
                 monitor.setLast_tx_time(LocalDateTime.now());
                 apiWalletMonitorRepository.save(monitor);
@@ -195,4 +200,48 @@ public class ParityRpcServiceImpl implements ParityRpcService {
         result.setResult_text(txCount.toString());
         return result;
     }
+
+    @Override
+    public String getTransactionByHash(HashMap<String, String> params) throws IOException {
+
+        HttpPost request = new HttpPost("http://"+rpcHost+":"+rpcPort);
+
+        RpcReqDto req = new RpcReqDto();
+        ResultDto result = new ResultDto();
+
+        req.setParams(new String[]{params.get("hash")});
+        req.setMethod("eth_getTransactionByHash");
+
+        StringEntity rpcParams =new StringEntity(new Gson().toJson(req));
+
+        request.addHeader("Content-type", "application/json");
+        request.setEntity(rpcParams);
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpResponse httpResponse = httpClient.execute(request);
+
+        String rpcResult = EntityUtils.toString(httpResponse.getEntity()).replace("\n","");
+        return rpcResult;
+    }
+
+    @Override
+    public String transactionInElastic(String txData) throws IOException {
+
+
+        HttpPost request = new HttpPost("http://"+rpcHost+":"+"9200/eth/node");
+
+        ResultDto result = new ResultDto();
+
+        StringEntity rpcParams =new StringEntity(txData);
+
+        request.addHeader("Content-type", "application/json");
+        request.setEntity(rpcParams);
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpResponse httpResponse = httpClient.execute(request);
+
+        return null;
+    }
+
+
 }
