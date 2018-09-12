@@ -26,7 +26,7 @@ public class WalletSelDto{
 
      public WalletSelDto(String addr, ApiCoin coins, Date ico_start, Date ico_end, String ico_currency,String currency) {
          this.addr = addr;
-          this.ico_start = ico_start;
+         this.ico_start = ico_start;
          this.ico_end = ico_end;
          this.ico_currency = ico_currency;
          this.currency = currency;
@@ -36,7 +36,7 @@ public class WalletSelDto{
         return ApiWallet.builder()
                 .addr(addr)
                 .currency_id(currency)
-                 .build();
+                .build();
     }
 
 }

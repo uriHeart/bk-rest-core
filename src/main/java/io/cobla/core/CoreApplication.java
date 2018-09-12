@@ -1,6 +1,5 @@
 package io.cobla.core;
 
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -17,7 +16,6 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 @PropertySource("classpath:/parityRpc.properties")
 @PropertySource("classpath:/application.properties")
 public class CoreApplication extends SpringBootServletInitializer {
-
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
         return application.sources(CoreApplication.class);

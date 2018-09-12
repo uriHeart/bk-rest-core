@@ -7,13 +7,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class RpcReqDto {
+public class EthBlockDto{
 
-    String jsonrpc ="2.0";
-    String id ="1";
-    String method;
-    Object[] params;
-    String result;
-
-
+    String id;
+    String jsonrpc;
+    EthBlockDataDto result;
 }

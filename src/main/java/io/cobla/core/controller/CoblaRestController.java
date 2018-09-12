@@ -42,7 +42,7 @@ public class CoblaRestController {
     CoblaRestService coblaRestService;
 
     @PostMapping("/v1/blacklist/wallet")
-    public String getWallet(@RequestBody WalletSelDto dto){
+    public ResponseEntity<?> getWallet(@RequestBody WalletSelDto dto){
 
         if(dto.getAddr().isEmpty()){
 
@@ -50,7 +50,7 @@ public class CoblaRestController {
             errResult.setError("invalid_parameter");
             errResult.setError_description("'addr' is required");
 
-            return new Gson().toJson(errResult);
+            return ResponseEntity.ok(errResult);
 
          }
 
@@ -77,13 +77,13 @@ public class CoblaRestController {
         String resultType=result.map(ApiWallet::getWalletType).map(ApiWallettype::getId).orElse("0");
 
         //ico 기간만료 체크
-        if(resultType.equals("2")) {
+        if(resultType.equals("7")) {
             Date icoStart = result.map(ApiWallet::getIco_start).orElse( new Date());
             Date icoEnd = result.map(ApiWallet::getIco_end).orElse( new Date());
             Date sysDate = new Date();
             if (!(sysDate.after(icoStart) && sysDate.before(icoEnd))) {
                 //ico 기간만료
-                resultType = "7";
+                resultType = "4";
             }
         }
 
@@ -91,39 +91,39 @@ public class CoblaRestController {
         resultDto.setExchange(result.map(ApiWallet::getApiExchange).map(ApiExchange::getId).orElse(""));
         resultDto.setIco_currency(result.map(ApiWallet::getIco_currency).orElse(""));
 
-        return new Gson().toJson(resultDto);
+        return ResponseEntity.ok(resultDto);
     }
 
 
 
     @PutMapping("/v1/blacklist/wallet")
-    public String saveWallet(@RequestBody WalletParamDto param){
+    public ResponseEntity<?> saveWallet(@RequestBody WalletParamDto param){
 
         if(param.getAddr().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
             errResult.setError_description("'addr' is required");
-            return new Gson().toJson(errResult);
+            return ResponseEntity.ok(errResult);
         }else if(param.getResult_type().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
             errResult.setError_description("'result_type' is required");
-            return new Gson().toJson(errResult);
+            return ResponseEntity.ok(errResult);
         }else if(param.getCurrency().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
             errResult.setError_description("'currency' is required");
-            return new Gson().toJson(errResult);
+            return ResponseEntity.ok(errResult);
 
         }else if(param.getExchange().isEmpty()){
 
             OauthErrDTO errResult = new OauthErrDTO();
             errResult.setError("invalid_parameter");
             errResult.setError_description("'exchange' is required");
-            return new Gson().toJson(errResult);
+            return ResponseEntity.ok(errResult);
         }
 
         WalletSaveReqDto inDto = new WalletSaveReqDto();
@@ -143,11 +143,11 @@ public class CoblaRestController {
         outDto.setCurrency(result.getCurrency_id());
         outDto.setExchange(result.getExchange_id());
 
-        return new Gson().toJson(outDto);
+        return ResponseEntity.ok(outDto);
     }
 
     @PostMapping("/v1/blacklist/wallet_block")
-    public String saveWalletList(@RequestBody WalletParamListDto params){
+    public ResponseEntity<?> saveWalletList(@RequestBody WalletParamListDto params){
 
         ArrayList<String> addrList = new ArrayList<String>();
 
@@ -158,7 +158,7 @@ public class CoblaRestController {
                 ResultDto resultDto = new ResultDto();
                 resultDto.setResult_code("1");
                 resultDto.setResult_text("error : addr is nul!");
-                return new Gson().toJson(resultDto);
+                return ResponseEntity.ok(resultDto);
             }
         }
 
@@ -177,14 +177,14 @@ public class CoblaRestController {
             String resultType = getData.getWalletType().getId();
 
             //ico 기간만료 체크
-            if(resultType.equals("2")) {
+            if(resultType.equals("7")) {
                 Date icoStart = getData.getIco_start();
                 Date icoEnd = getData.getIco_end();
                 Date sysDate = new Date();
                 if(icoStart ==null || icoEnd == null){continue;}
                 if (!(sysDate.after(icoStart) && sysDate.before(icoEnd))) {
                     //ico 기간만료
-                    resultType = "7";
+                    resultType = "4";
                 }
             }
 
@@ -196,7 +196,7 @@ public class CoblaRestController {
         WalletListReturnDto listReturn = new WalletListReturnDto();
         listReturn.setResult(result);
 
-        return new Gson().toJson(listReturn);
+        return ResponseEntity.ok(result);
     }
 
     //@Transactional
@@ -233,7 +233,7 @@ public class CoblaRestController {
 
 
     //이더스캔에서캔에서 지값 주소에 대한 트랜잭션을 획득한다.
-     @PostMapping(value ="/addr/transaction")
+    @PostMapping(value ="/addr/transaction")
     public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto)  {
 
         ResultDto result= new ResultDto();

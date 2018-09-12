@@ -4,9 +4,13 @@ import com.google.gson.Gson;
 import io.cobla.core.domain.repository.ApiWalletMonitorRepository;
 import io.cobla.core.domain.rpc.ApiWalletMonitor;
 import io.cobla.core.dto.ResultDto;
-import io.cobla.core.dto.rpc.ApiWalletMonitorReqDto;
-import io.cobla.core.dto.rpc.RpcReqDto;
+import io.cobla.core.dto.rpc.*;
+import io.cobla.core.service.ElasticSearchService;
 import io.cobla.core.service.ParityRpcService;
+import io.cobla.core.util.EthDateUtil;
+import io.cobla.core.util.EthNumberUtil;
+
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -16,6 +20,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,13 +28,14 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @EnableScheduling
 @Service
 public class ParityRpcServiceImpl implements ParityRpcService {
@@ -37,16 +43,28 @@ public class ParityRpcServiceImpl implements ParityRpcService {
     @Value("${block.tracer.parity.rpc.host}")
     private String rpcHost;
 
+    @Value("${block.tracer.elk.host}")
+    private String elkHost;
+
     @Value("${block.tracer.parity.rpc.port}")
     private String rpcPort;
+
+    @Value("${block.tracer.elk.port}")
+    private String elkPort;
 
     @Value("${block.tracer.parity.rpc.get.balance}")
     private String balanceMethod;
 
+    @Value("${block.tracer.parity.rpc.block.number}")
+    private String lastBlockNumberMethode;
+
     @Autowired
     ApiWalletMonitorRepository apiWalletMonitorRepository;
 
-    @Value("${block.tracer.parity.rpc.dvide.value}")
+    @Autowired
+    ElasticSearchService elkService;
+
+    @Value("${block.tracer.parity.rpc.divide.value}")
     private String divideBase;
 
     @Override
@@ -116,7 +134,6 @@ public class ParityRpcServiceImpl implements ParityRpcService {
     @Scheduled(cron ="0/60 * * * * ?")
     @Override
     public void ethMonitorSendTx() throws IOException {
-
         //모니터링 대상 조회
         List<ApiWalletMonitor> monitorList= this.getEthMonitorList();
 
@@ -228,7 +245,7 @@ public class ParityRpcServiceImpl implements ParityRpcService {
     public String transactionInElastic(String txData) throws IOException {
 
 
-        HttpPost request = new HttpPost("http://"+rpcHost+":"+"9200/eth/node");
+      /*  HttpPost request = new HttpPost("http://"+rpcHost+":"+"9200/eth/node");
 
         ResultDto result = new ResultDto();
 
@@ -238,9 +255,187 @@ public class ParityRpcServiceImpl implements ParityRpcService {
         request.setEntity(rpcParams);
 
         CloseableHttpClient httpClient = HttpClients.createDefault();
-        CloseableHttpResponse httpResponse = httpClient.execute(request);
+        CloseableHttpResponse httpResponse = httpClient.execute(request);*/
 
         return null;
+    }
+
+    @Scheduled(cron ="0/1 * * * * ?")
+    @Override
+    public String getEtherBlockNumber() throws IOException {
+
+        String procBlockNumber =null;
+        String blockHex = null;
+
+        try {
+
+            RpcReqDto blockNumberReqDto = new RpcReqDto();
+            blockNumberReqDto.setMethod(this.lastBlockNumberMethode);
+
+            //node 의 현재 블록넘버 조회
+            RpcReqDto nodeData_blockNumber = this.callParityRpc(blockNumberReqDto, RpcReqDto.class);
+
+            String nodeBlockNumber = EthNumberUtil.hexToNumber(nodeData_blockNumber.getResult());
+
+            String elkBlockNumber = elkService.getMaxEthBlockNumber();
+
+            //elk의 현재 블록과 node의 블록 넘버가 같으면 pass
+            if (Integer.parseInt(nodeBlockNumber) == Integer.parseInt(elkBlockNumber)) {
+                return "pass";
+            }
+
+            procBlockNumber = String.valueOf(Integer.parseInt(elkBlockNumber) + 1);
+
+
+            //elk 에 저장된 blockNumber 조회
+
+            String query = procBlockNumber;
+            String searchUri = elkService.makeElasticUri("check/block", query);
+
+            HashMap<String, Object> checkBlock = elkService.elasticHttpGet(searchUri, HashMap.class);
+
+            String check = checkBlock.get("found").toString();
+            //node의 블록이 elk에 있으면 pass
+
+            if (Boolean.valueOf(check)) {
+                return "pass";
+            }
+
+            //blockNumber 저장
+            String blockSaveUri = elkService.makeElasticUri("check/block", procBlockNumber);
+            EthBlockNumberInsDto blockNumberInsDto = new EthBlockNumberInsDto();
+            blockNumberInsDto.setInsert(true);
+
+            blockNumberInsDto.setBlockNumber(Integer.parseInt(procBlockNumber));
+            elkService.elasticHttpPost(blockSaveUri, blockNumberInsDto);
+
+            //이더리움 블록 데이터 조회
+            BigInteger bi = new BigInteger(procBlockNumber);
+            blockHex ="0x" + bi.toString(16);
+            List<EthTxInsDto> insDtoList = this.getEthBlockDataByNumber(blockHex);
+
+
+            //ELK 호출하여 데이터 저장
+            //데이터 저장시에는 도큐먼트에 트랜잭션과 블록단위의 데이터를 전부 넣는다
+            elkService.addEthTxBulk(insDtoList);
+
+
+        }catch(Exception e){
+
+            log.error("Error Block:"+procBlockNumber+" $$ Block Hex:"+blockHex);
+
+            String blockSaveUri = elkService.makeElasticUri("error/block", procBlockNumber);
+            EthBlockNumberInsDto blockNumberInsDto = new EthBlockNumberInsDto();
+            blockNumberInsDto.setInsert(true);
+
+            blockNumberInsDto.setBlockNumber(Integer.parseInt(procBlockNumber));
+            elkService.elasticHttpPost(blockSaveUri, blockNumberInsDto);
+         }
+        return "success";
+    }
+
+    @Override
+    public void addEthTxToElk(EthTxInsDto insDto) throws IOException {
+
+        HttpPost request = new HttpPost("http://"+rpcHost+":"+elkPort+"/eth/transaction/"+insDto.getHash());
+
+        StringEntity rpcParams =new StringEntity(new Gson().toJson(insDto));
+
+        request.addHeader("Content-type", "application/json");
+        request.setEntity(rpcParams);
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpResponse httpResponse = httpClient.execute(request);
+
+    }
+
+    @Override
+    public List<EthTxInsDto> getEthBlockDataByNumber(String hexBlockNumber) throws IOException {
+            RpcReqDto transactionReqDto = new RpcReqDto();
+
+            transactionReqDto.setMethod("eth_getBlockByNumber");
+            Object[] params = {hexBlockNumber,true};
+            transactionReqDto.setParams(params);
+
+            //Ethereum block 정보 취득
+            EthBlockDto ethBlock = this.callParityRpc(transactionReqDto,EthBlockDto.class);
+
+            EthBlockDataDto blockData = ethBlock.getResult();
+
+            blockData.setGasLimit(EthNumberUtil.hexToNumber(blockData.getGasLimit()));
+            blockData.setGasUsed(EthNumberUtil.hexToNumber(blockData.getGasUsed()));
+            blockData.setNonce(EthNumberUtil.hexToNumber(blockData.getNonce()));
+            blockData.setNumber(EthNumberUtil.hexToNumber(blockData.getNumber()));
+            blockData.setDifficulty(EthNumberUtil.hexToNumber(blockData.getDifficulty()));
+
+            //도큐먼트 생성 DTO
+            List<EthTxInsDto> insDtoList = new ArrayList<EthTxInsDto>();
+            List<EthTxDto> txList = ethBlock.getResult().getTransactions();
+            txList.forEach(tx ->{
+                //Block Data Mapping
+                EthTxInsDto insDto = new EthTxInsDto();
+                insDto.setAuthor(blockData.getAuthor());
+                insDto.setDifficulty(blockData.getDifficulty());
+                insDto.setExtraData(blockData.getExtraData());
+                insDto.setGasLimit(blockData.getGasLimit());
+                insDto.setGasUsed(blockData.getGasUsed());
+                insDto.setBlockHash(blockData.getHash());
+                insDto.setLogsBloom(blockData.getLogsBloom());
+                insDto.setMiner(blockData.getMiner());
+                insDto.setMixHash(blockData.getMixHash());
+                insDto.setBlockNonce(blockData.getNonce());
+                insDto.setBlockNumber(blockData.getNumber());
+                insDto.setParentHash(blockData.getParentHash());
+                insDto.setReceiptsRoot(blockData.getReceiptsRoot());
+                insDto.setSha3Uncles(blockData.getSha3Uncles());
+                insDto.setSize(EthNumberUtil.hexToNumber(blockData.getSize()));
+                insDto.setTimestamp(EthDateUtil.hexToDate(blockData.getTimestamp(),"UTC"));
+                insDto.setTotalDifficulty(EthNumberUtil.hexToNumber(blockData.getTotalDifficulty()));
+                insDto.setTransactionsRoot(blockData.getTransactionsRoot());
+
+
+                //Tx Data Mapping
+                insDto.setChainId(tx.getChainId());
+                insDto.setCondition(tx.getCondition());
+                insDto.setCreates(tx.getCreates());
+                insDto.setFrom(tx.getFrom());
+                insDto.setGas(EthNumberUtil.hexToNumber(tx.getGas()));
+                insDto.setGasPrice(EthNumberUtil.hexToGasPrice(tx.getGasPrice()));
+                insDto.setHash(tx.getHash());
+                insDto.setInput(tx.getInput());
+                insDto.setNonce(EthNumberUtil.hexToNumber(tx.getNonce()));
+                insDto.setPublicKey(tx.getPublicKey());
+                insDto.setR(tx.getR());
+                insDto.setRaw(tx.getRaw());
+                insDto.setS(tx.getS());
+                insDto.setStandardV(tx.getStandardV());
+                insDto.setTo(tx.getTo());
+                insDto.setTransactionIndex(EthNumberUtil.hexToNumber(tx.getTransactionIndex()));
+                insDto.setV(tx.getV());
+                insDto.setValue(EthNumberUtil.hexToRealNumber(tx.getValue()));
+
+                insDtoList.add(insDto);
+            });
+
+
+        return insDtoList;
+    }
+
+    public <T> T  callParityRpc(RpcReqDto params, Class<T> classOfT ) throws IOException {
+        HttpPost request = new HttpPost("http://"+rpcHost+":"+rpcPort);
+
+        StringEntity rpcParams =new StringEntity(new Gson().toJson(params));
+
+        request.addHeader("Content-type", "application/json");
+        request.setEntity(rpcParams);
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpResponse httpResponse = httpClient.execute(request);
+
+        String rpcResult = EntityUtils.toString(httpResponse.getEntity()).replace("\n","");
+
+        T result =  new Gson().fromJson(rpcResult,classOfT);
+        return result;
     }
 
 

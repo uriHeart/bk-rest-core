@@ -3,6 +3,7 @@ package io.cobla.core.controller;
 import com.google.gson.Gson;
 import io.cobla.core.dto.ResultDto;
 import io.cobla.core.dto.rpc.ApiWalletMonitorReqDto;
+import io.cobla.core.dto.rpc.EthTxInsDto;
 import io.cobla.core.dto.rpc.RpcReqDto;
 import io.cobla.core.service.ParityRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-
+import java.util.List;
 
 
 @RestController
@@ -91,14 +92,17 @@ public class ParityRcpController {
         return ResponseEntity.ok(reqDto);
     }
 
-    @PostMapping("/test/elastic")
-    public String convertTransaction(@RequestBody HashMap<String, String> params ) throws IOException {
+    @PostMapping("/elastic/make/transaction")
+    public String convertTransaction(@RequestBody String params ) throws IOException {
 
 
-        String txData = parityRpcService.getTransactionByHash(params);
-        parityRpcService.transactionInElastic(txData);
+        List<EthTxInsDto> insDtoList = parityRpcService.getEthBlockDataByNumber(params);
 
-        return new Gson().toJson("");
+        for(EthTxInsDto insDto : insDtoList){
+            parityRpcService.addEthTxToElk(insDto);
+        }
+
+        return "success";
     }
 
 
