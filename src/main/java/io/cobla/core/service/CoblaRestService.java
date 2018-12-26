@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public interface CoblaRestService {
-    String buildEtherScanAccountUri(ApiWalletTransactionReqDto param);
+    String buildEtherScanAccountUri(ApiWalletTransactionReqDto param,String apiKey);
 
     ArrayList<ApiWalletTransactionReqDto> addWalletTransaction(EtherScanDto etherTxData);
 
     ResultDto addBlackWallet(MultipartFile file) throws Exception;
 
-    ResultDto collectTransaction(ApiWalletTransactionReqDto param);
+    ResultDto collectTransaction(ApiWalletTransactionReqDto param,String inputApiKey);
 
     //ArrayList<ApiWalletTransactionReqDto> collectTransaction(ArrayList<ApiWalletTransactionReqDto> param,HashMap<String,String> runKey);
 }

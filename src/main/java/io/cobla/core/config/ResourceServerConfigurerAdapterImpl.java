@@ -27,7 +27,12 @@ public class ResourceServerConfigurerAdapterImpl extends ResourceServerConfigure
             .permitAll()
             .antMatchers( "/elastic/make/transaction")
             .permitAll()
-
+                .antMatchers( "/temp/eth/black")
+                .permitAll()
+                .antMatchers( "/temp/hum")
+                .permitAll()
+                .antMatchers( "/temp/hum/result")
+                .permitAll()
             //.antMatchers( "/v1/blacklist/wallet_block")
             //.permitAll()
             //.antMatchers( "/wallet")

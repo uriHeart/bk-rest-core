@@ -91,4 +91,7 @@ public interface ParityRpcService {
      */
     List<EthTxInsDto> getEthBlockDataByNumber(String blockNumber) throws IOException;
 
+
+
+
 }

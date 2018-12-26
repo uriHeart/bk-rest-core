@@ -14,7 +14,14 @@ public class CoreApplicationTests {
 
     @Test
     public void contextLoads() {
+        int i =1000;
 
+        for(int k=0;k<10000;k++){
+            if(k/i==0){
+                System.out.print(i);
+            }
+
+        }
     }
 
 }

@@ -1,17 +1,25 @@
 package io.cobla.core.controller;
 
 import com.google.gson.Gson;
+import io.cobla.core.domain.ApiWalletTransactionEther;
+import io.cobla.core.dto.ApiWalletTransactionEtherDto;
+import io.cobla.core.dto.ApiWalletTransactionReqDto;
+import io.cobla.core.dto.EtherScanDto;
 import io.cobla.core.dto.ResultDto;
 import io.cobla.core.dto.rpc.ApiWalletMonitorReqDto;
 import io.cobla.core.dto.rpc.EthTxInsDto;
 import io.cobla.core.dto.rpc.RpcReqDto;
+import io.cobla.core.service.CoblaRestService;
 import io.cobla.core.service.ParityRpcService;
+import io.cobla.core.util.EthDateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -20,9 +28,11 @@ import java.util.List;
 public class ParityRcpController {
 
 
-
     @Autowired
     ParityRpcService parityRpcService;
+
+    @Autowired
+    CoblaRestService coblaRestService;
 
     //@RequestMapping(value = "/v1/address/balance", method = RequestMethod.POST,consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @PostMapping("/v1/address/balance")
@@ -104,6 +114,5 @@ public class ParityRcpController {
 
         return "success";
     }
-
 
 }

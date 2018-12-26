@@ -12,6 +12,7 @@ import io.cobla.core.service.CoblaRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,7 +45,7 @@ public class CoblaRestServiceImpl implements CoblaRestService {
 
 
     @Override
-    public String buildEtherScanAccountUri(ApiWalletTransactionReqDto param) {
+    public String buildEtherScanAccountUri(ApiWalletTransactionReqDto param,String inputApiKey) {
 
 
         String module = "account";
@@ -71,7 +72,7 @@ public class CoblaRestServiceImpl implements CoblaRestService {
         sb.append("&sort=");
         sb.append(sort);
         sb.append("&apikey=");
-        sb.append(apiKey);
+        sb.append(StringUtils.isEmpty(inputApiKey)?apiKey:inputApiKey);
 
         return sb.toString();
     }
@@ -208,12 +209,12 @@ public class CoblaRestServiceImpl implements CoblaRestService {
 
 
     @Override
-    public ResultDto collectTransaction(ApiWalletTransactionReqDto param){
+    public ResultDto collectTransaction(ApiWalletTransactionReqDto param,String inputApiKey){
 
         ResultDto result = new ResultDto();
 
         //GET REQUEST URL 생성
-        String url = this.buildEtherScanAccountUri(param);
+        String url = this.buildEtherScanAccountUri(param,inputApiKey);
 
         RestTemplate restTemplate = new RestTemplate();
 

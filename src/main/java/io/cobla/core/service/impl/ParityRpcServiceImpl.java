@@ -260,7 +260,7 @@ public class ParityRpcServiceImpl implements ParityRpcService {
         return null;
     }
 
-    @Scheduled(cron ="0/1 * * * * ?")
+    //@Scheduled(cron ="0/1 * * * * ?")
     @Override
     public String getEtherBlockNumber() throws IOException {
 
@@ -301,13 +301,7 @@ public class ParityRpcServiceImpl implements ParityRpcService {
                 return "pass";
             }
 
-            //blockNumber 저장
-            String blockSaveUri = elkService.makeElasticUri("check/block", procBlockNumber);
-            EthBlockNumberInsDto blockNumberInsDto = new EthBlockNumberInsDto();
-            blockNumberInsDto.setInsert(true);
 
-            blockNumberInsDto.setBlockNumber(Integer.parseInt(procBlockNumber));
-            elkService.elasticHttpPost(blockSaveUri, blockNumberInsDto);
 
             //이더리움 블록 데이터 조회
             BigInteger bi = new BigInteger(procBlockNumber);
@@ -331,6 +325,15 @@ public class ParityRpcServiceImpl implements ParityRpcService {
             blockNumberInsDto.setBlockNumber(Integer.parseInt(procBlockNumber));
             elkService.elasticHttpPost(blockSaveUri, blockNumberInsDto);
          }
+
+        //blockNumber 저장
+        String blockSaveUri = elkService.makeElasticUri("check/block", procBlockNumber);
+        EthBlockNumberInsDto blockNumberInsDto = new EthBlockNumberInsDto();
+        blockNumberInsDto.setInsert(true);
+
+        blockNumberInsDto.setBlockNumber(Integer.parseInt(procBlockNumber));
+        elkService.elasticHttpPost(blockSaveUri, blockNumberInsDto);
+
         return "success";
     }
 

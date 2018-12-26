@@ -22,4 +22,6 @@ public interface WalletRepository  extends JpaRepository<ApiWallet, Long> {
 
     ArrayList<ApiWallet> findDistinctApiWalletByAddrInAndCoins_Id(List<String> addr , String currency);
 
+    ArrayList<ApiWallet> findDistinctApiWalletByCoins_Id(String currency);
+
 }

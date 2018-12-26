@@ -38,8 +38,11 @@ public class CoblaRestController {
     ApiWalletSaveRepository walletSaveRepository;
 
 
+
     @Autowired
     CoblaRestService coblaRestService;
+
+
 
     @PostMapping("/v1/blacklist/wallet")
     public ResponseEntity<?> getWallet(@RequestBody WalletSelDto dto){
@@ -232,14 +235,35 @@ public class CoblaRestController {
     }
 
 
-    //이더스캔에서캔에서 지값 주소에 대한 트랜잭션을 획득한다.
+    //임시 hum 정보생성
+    @PostMapping(value ="/temp/eth/black")
+    public String tampAddList( @RequestBody ApiWalletTransactionReqDto dto) {
+
+
+        List<ApiWallet> result =  walletRepository.findDistinctApiWalletByCoins_Id("eth");
+
+        for(ApiWallet data : result){
+            ApiWalletTransactionReqDto reqDto = new ApiWalletTransactionReqDto();
+            reqDto.setAddr(data.getAddr());
+            coblaRestService.collectTransaction(reqDto,"");
+
+        }
+
+
+        return new Gson().toJson(result);
+    }
+
+
+
+
+
     @PostMapping(value ="/addr/transaction")
     public String doTransactionAnalysis( @RequestBody ApiWalletTransactionReqDto dto)  {
 
         ResultDto result= new ResultDto();
 
         try {
-            result = coblaRestService.collectTransaction(dto);
+            result = coblaRestService.collectTransaction(dto,"");
             result.setResult_code("0");
             result.setResult_text("SUCCESS");
 
@@ -249,7 +273,6 @@ public class CoblaRestController {
         }
 
         return new Gson().toJson(result);
-
 
 
 

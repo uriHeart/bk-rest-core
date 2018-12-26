@@ -27,6 +27,19 @@ public class EthDateUtil {
          return format.format(zdt);
     }
 
+    public static String LongToDateSeoul(@NotNull Long date,@NotNull String timeZone){
+        ZoneId zoneId = ZoneId.of(timeZone );//"UTC","Asia/Seoul"
+
+         Instant instant = Instant.ofEpochSecond( date );
+        ZonedDateTime zdt = ZonedDateTime.ofInstant( instant , zoneId );
+
+        LocalDateTime time = zdt.toLocalDateTime();
+
+        DateTimeFormatter format = DateTimeFormatter.ofPattern(YYYY_MM_DD_HH_24);
+
+        return format.format(zdt);
+    }
+
 
     public static LocalDateTime hexToDate(@NotNull String hexDate,@NotNull String timeZone){
         ZoneId zoneId = ZoneId.of(timeZone );//"UTC","Asia/Seoul"
